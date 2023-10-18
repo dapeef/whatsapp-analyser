@@ -1,4 +1,5 @@
 from datetime import datetime, date, timedelta
+import dateutil.parser as date_parser
 import enum
 from turtle import st
 import matplotlib.pyplot as plt
@@ -12,6 +13,7 @@ import tkinter.ttk as ttk
 import math
 import re
 import json
+import time
 
 
 class Media:
@@ -523,17 +525,18 @@ def create_days_dict(messages):
     return dict((key, 0) for key in keys)
 
 
-def parse_file(file_name, include_media=False):
+def parse_file(file_name, include_media=False, file_type=None):
     raw = open(file_name, "r", encoding="utf8").read()
 
-    if file_name[-5:] == ".json":
-        file_type = "facebook"
+    if file_type == None:
+        if file_name[-5:] == ".json":
+            file_type = "facebook"
 
-    elif raw[0][0] == "[":
-        file_type = "iphone"
+        elif raw[0][0] == "[":
+            file_type = "iphone"
 
-    else:
-        file_type = "whatsapp"
+        else:
+            file_type = "whatsapp"
 
     print("Detected file type: " + file_type)
 
@@ -555,6 +558,47 @@ def parse_file(file_name, include_media=False):
                 text = message["content"]
 
                 messages.messages.append(Message(date, name, text))
+
+    elif file_type == "imessage":
+        first_message = True
+
+        date = ""
+        name = ""
+        text = ""
+
+        for line in raw.split("\n"):
+            line = line.strip()
+
+            if line != "This message responded to an earlier message.":
+                try:
+                    new_date = date_parser.parse(line)
+                    is_date = True
+
+                    # Write old message to database
+                    if not first_message:
+                        text.strip("\n")
+
+                        messages.messages.append(Message(date, name, text))
+
+                        if not name in messages.speakers:
+                            messages.speakers.append(name)
+
+                        text = ""
+
+                    line_type = "date"
+                    date = new_date
+                
+                except date_parser._parser.ParserError:
+                    is_date = False
+
+                    if line_type == "date":
+                        line_type = "name"
+                        name = line
+                        first_message = False
+
+                    elif line_type == "name":
+                        line_type = "text"
+                        text += line
 
     else:
         for line in raw.split("\n")[1:]:
@@ -596,6 +640,7 @@ def parse_file(file_name, include_media=False):
                 pass
                 # print("Oh dear, I can't handle this line:")
                 # print(line)
+
 
     messages.sort()
 
@@ -767,10 +812,10 @@ def search_word_per_day(data, messages, regex):
     return data
 
 
-file_name = "katie.txt"
-file_name = "chats\\" + file_name
+file_name = "jack.txt"
+file_name = "chats\\katie-w\\" + file_name
 
-messages = parse_file(file_name)
+messages = parse_file(file_name, file_type="imessage")
 
 column_name_tuples = [("Num messages", "N/A", "All", "None", 1),
                       ("Num words", "N/A", "All", "None", 1)]
