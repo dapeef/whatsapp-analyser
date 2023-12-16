@@ -569,6 +569,8 @@ def parse_file(file_name, include_media=False, file_type=None):
         for line in raw.split("\n"):
             line = line.strip()
 
+            # line = line.split("(Read by ")[0]
+
             if line != "This message responded to an earlier message.":
                 try:
                     new_date = date_parser.parse(line)
@@ -694,8 +696,12 @@ def x_day_average(data, column, x):
     column_num = data.columns.get_loc(column.get(depth=4) + (1,))
 
     for i in range(lower_reach, len(values) - higher_reach):
+        # print(data.iloc[i-lower_reach:i +
+        #                             higher_reach + 1, column_num:column_num+1].sum().iloc[0])
         values[i] = float(data.iloc[i-lower_reach:i +
                                     higher_reach + 1, column_num:column_num+1].sum() / x)
+        
+        print(i)
 
     data[column.get(depth=4) + (x,)] = values
 
@@ -812,7 +818,7 @@ def search_word_per_day(data, messages, regex):
     return data
 
 
-file_name = "jack.txt"
+file_name = "jack2.txt"
 file_name = "chats\\katie-w\\" + file_name
 
 messages = parse_file(file_name, file_type="imessage")
@@ -856,6 +862,8 @@ graph_ui = GraphUI(main_window.root)
 # data = search_word_per_day(data, messages, "lol")
 # data = search_word_per_day(data, messages, "poo")
 
+print("Data parsed")
+
 data = x_day_average(
     data, Column("Num words", "N/A", "All", "None"), 5)
 data = x_day_average(
@@ -864,12 +872,14 @@ data = x_day_average(
     data, Column("Num words", "N/A", messages.speakers[1], "None"), 5)
 
 
-# print(data)
+print(data)
 
 
 selection_ui.add_graph(preset=Column(
     "Num words", "N/A", messages.speakers[0], "None", 5))
 selection_ui.add_graph(preset=Column(
     "Num words", "N/A", messages.speakers[1], "None", 5))
+
+print("Startup complete")
 
 main_window.root.mainloop()
